@@ -1,0 +1,44 @@
+services:
+
+  wordpress:
+    image: wordpress
+    restart: always
+    ports:
+      - 8080:80 # WordPress uygulamasını host'un 8080 portundan erişilebilir kılar
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: admin
+      WORDPRESS_DB_PASSWORD: 1234
+      WORDPRESS_DB_NAME: wordpress_db
+    volumes:
+      - wordpress:/var/www/html # WordPress verilerini host üzerinde saklar
+    deploy:
+      replicas: 2 # Yük dengeleme için iki kopya oluşturur
+      restart_policy:
+        max_attempts: 3 # Maksimum yeniden başlatma denemesi
+        condition: on-failure # Sadece hata durumunda yeniden başlatır
+      placement:
+        constraints:
+          - node.role == worker # Sadece worker düğümlerinde çalışır
+
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: wordpress_db
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: 1234
+      MYSQL_RANDOM_ROOT_PASSWORD: '1' # Rastgele root şifresi oluşturur
+    volumes:
+      - db:/var/lib/mysql # MySQL verilerini host üzerinde saklar
+    deploy:
+      replicas: 1 # Veritabanı için bir kopya yeterlidir
+      restart_policy:
+        condition: on-failure # Sadece hata durumunda yeniden başlatır
+      placement:
+        constraints:
+          - node.role == worker # Sadece worker düğümlerinde çalışır
+
+volumes:
+  wordpress:
+  db:
